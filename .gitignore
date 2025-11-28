@@ -1,1 +1,59 @@
-﻿.env
+# Fichiers d'environnement
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# Docker
+docker-compose.override.yml
+
+# Certificats SSL et clés privées
+*.pem
+*.key
+*.crt
+certbot/conf/
+certbot/www/
+certbot/logs/
+
+# Logs
+*.log
+logs/
+
+# Fichiers temporaires
+*.tmp
+*.swp
+*.swo
+*~
+nul
+
+# Base de données
+*.db
+*.sqlite
+*.sqlite3
+
+# Vidéos (souvent volumineuses)
+*.mp4
+*.avi
+*.mov
+*.mkv
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
