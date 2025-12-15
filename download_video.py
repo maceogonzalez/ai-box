@@ -1,5 +1,5 @@
 """
-Script pour télécharger les vidéos Sora-2 générées
+Script to download generated Sora-2 videos
 """
 import os
 import sys
@@ -16,7 +16,7 @@ OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 OPENAI_BASE_URL = "https://api.openai.com/v1"
 
 def check_video_status(video_id):
-    """Vérifie le statut d'une vidéo"""
+    """Check the status of a video"""
     response = requests.get(
         f"{OPENAI_BASE_URL}/videos/{video_id}",
         headers={
@@ -27,25 +27,25 @@ def check_video_status(video_id):
     if response.status_code == 200:
         return response.json()
     else:
-        print(f"❌ Erreur lors de la vérification: {response.text}")
+        print(f"❌ Error checking status: {response.text}")
         return None
 
 def download_video(video_id, output_path=None):
-    """Télécharge une vidéo Sora-2"""
+    """Download a Sora-2 video"""
 
     if not OPENAI_API_KEY:
-        print("❌ ERREUR: OPENAI_API_KEY non définie")
+        print("❌ ERROR: OPENAI_API_KEY not set")
         return False
 
     print("=" * 60)
-    print("📥 TÉLÉCHARGEMENT VIDÉO SORA-2")
+    print("📥 SORA-2 VIDEO DOWNLOAD")
     print("=" * 60)
     print()
     print(f"Video ID: {video_id}")
     print()
 
-    # Vérifier le statut
-    print("🔍 Vérification du statut...")
+    # Check status
+    print("🔍 Checking status...")
     status_data = check_video_status(video_id)
 
     if not status_data:
@@ -54,43 +54,43 @@ def download_video(video_id, output_path=None):
     status = status_data.get('status')
     print(f"   Status: {status}")
 
-    # Si pas encore prêt, attendre
+    # If not ready yet, wait
     max_wait = 300  # 5 minutes max
     start_time = time.time()
 
     while status in ['queued', 'processing'] and (time.time() - start_time) < max_wait:
-        print(f"   ⏳ En cours... ({status})")
+        print(f"   ⏳ In progress... ({status})")
         time.sleep(10)
         status_data = check_video_status(video_id)
         if status_data:
             status = status_data.get('status')
             progress = status_data.get('progress', 0)
-            print(f"      Progression: {progress}%")
+            print(f"      Progress: {progress}%")
         else:
             break
 
     if status != 'completed':
-        print(f"❌ La vidéo n'est pas prête. Status: {status}")
+        print(f"❌ Video is not ready. Status: {status}")
         if status == 'failed':
             error = status_data.get('error', 'Unknown error')
-            print(f"   Erreur: {error}")
+            print(f"   Error: {error}")
         return False
 
-    print("✅ Vidéo prête!")
+    print("✅ Video ready!")
     print()
 
-    # Télécharger la vidéo
-    print("📥 Téléchargement...")
+    # Download the video
+    print("📥 Downloading...")
 
-    # L'URL de téléchargement devrait être dans la réponse
-    # Selon la doc OpenAI, il peut y avoir un champ 'url' ou il faut faire une requête GET
+    # The download URL should be in the response
+    # According to OpenAI docs, there may be a 'url' field or a GET request is needed
     video_url = status_data.get('url')
 
     if video_url:
-        # Télécharger depuis l'URL fournie
+        # Download from provided URL
         video_response = requests.get(video_url, stream=True)
     else:
-        # Essayer de télécharger directement depuis l'endpoint
+        # Try to download directly from endpoint
         video_response = requests.get(
             f"{OPENAI_BASE_URL}/videos/{video_id}/content",
             headers={
@@ -100,11 +100,11 @@ def download_video(video_id, output_path=None):
         )
 
     if video_response.status_code != 200:
-        print(f"❌ Erreur de téléchargement: {video_response.status_code}")
+        print(f"❌ Download error: {video_response.status_code}")
         print(f"   {video_response.text}")
         return False
 
-    # Sauvegarder
+    # Save file
     if not output_path:
         output_path = f"video_{video_id}.mp4"
 
@@ -118,19 +118,19 @@ def download_video(video_id, output_path=None):
                 downloaded += len(chunk)
                 if total_size > 0:
                     percent = (downloaded / total_size) * 100
-                    print(f"\r   Téléchargement: {percent:.1f}%", end='', flush=True)
+                    print(f"\r   Download: {percent:.1f}%", end='', flush=True)
 
     print()
     print()
-    print(f"✅ Vidéo sauvegardée: {output_path}")
+    print(f"✅ Video saved: {output_path}")
     print()
 
-    # Afficher les métadonnées
-    print("📊 Métadonnées:")
+    # Display metadata
+    print("📊 Metadata:")
     print(f"   Prompt: {status_data.get('prompt')}")
-    print(f"   Durée: {status_data.get('seconds')}s")
-    print(f"   Taille: {status_data.get('size')}")
-    print(f"   Modèle: {status_data.get('model')}")
+    print(f"   Duration: {status_data.get('seconds')}s")
+    print(f"   Size: {status_data.get('size')}")
+    print(f"   Model: {status_data.get('model')}")
 
     return True
 
@@ -138,9 +138,9 @@ if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python download_video.py <video_id> [output_path]")
         print()
-        print("Exemple:")
+        print("Example:")
         print("  python download_video.py video_690e0c4ab8a481909e70d21d2a555dea081e3ac30545498f")
-        print("  python download_video.py video_690e0c4ab8a481909e70d21d2a555dea081e3ac30545498f ma_video.mp4")
+        print("  python download_video.py video_690e0c4ab8a481909e70d21d2a555dea081e3ac30545498f my_video.mp4")
         sys.exit(1)
 
     video_id = sys.argv[1]

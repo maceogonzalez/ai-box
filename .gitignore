@@ -1,4 +1,4 @@
-# Fichiers d'environnement
+# Environment files
 .env
 .env.local
 .env.*.local
@@ -19,7 +19,7 @@ build/
 # Docker
 docker-compose.override.yml
 
-# Certificats SSL et clés privées
+# SSL certificates and private keys
 *.pem
 *.key
 *.crt
@@ -31,19 +31,19 @@ certbot/logs/
 *.log
 logs/
 
-# Fichiers temporaires
+# Temporary files
 *.tmp
 *.swp
 *.swo
 *~
 nul
 
-# Base de données
+# Database
 *.db
 *.sqlite
 *.sqlite3
 
-# Vidéos (souvent volumineuses)
+# Videos (often large)
 *.mp4
 *.avi
 *.mov
@@ -57,3 +57,6 @@ nul
 # OS
 .DS_Store
 Thumbs.db
+
+# Claude Code worktrees
+.claude-worktrees/
