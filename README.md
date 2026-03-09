@@ -1,351 +1,208 @@
-# OpenWebUI AI Platform with LiteLLM Gateway
+# AI Box — Self-Hosted AI Infrastructure
 
-A comprehensive Docker-based AI platform integrating OpenWebUI, LiteLLM proxy gateway, Ollama, n8n automation, and support for multiple AI providers including OpenAI Sora-2 video generation.
+Internal AI platform built for the [Center for Hybrid Intelligence (CHI)](https://chi.au.dk) at Aarhus University. Powers Tech Circle workshops and internal AI experimentation.
 
-## Features
-
-- **OpenWebUI**: Modern web interface for AI interactions
-- **LiteLLM Proxy**: Unified gateway for 100+ LLM providers with cost tracking
-- **Ollama**: Local LLM deployment support
-- **Sora-2 Adapter**: Custom adapter for OpenAI Sora-2 video generation
-- **n8n**: Workflow automation platform
-- **MCP YouTube Transcript**: Extract transcripts from YouTube videos
-- **Nginx**: Reverse proxy with security headers
-- **Cloudflare Tunnel**: Secure external access
-- **PostgreSQL**: Database backend for n8n and LiteLLM
-
-## Supported AI Models
-
-### Text Generation
-- OpenAI: GPT-3.5, GPT-4, GPT-5, GPT-5.1 (Azure)
-- Anthropic: Claude 4.5 Sonnet
-- Google: Gemini 2.5 Pro
-- Mistral: Mistral Small (Azure)
-- Ollama: Llama 3.2 and any locally hosted models
-
-### Video Generation
-- OpenAI Sora-2 (with custom adapter for OpenWebUI integration)
-
-### Image Generation
-- DALL-E 2
-- DALL-E 3
-- GPT Image 1
-
-## Architecture
+## Stack Overview
 
 ```
-┌─────────────┐     ┌──────────────┐     ┌─────────────┐
-│  OpenWebUI  │────▶│ Sora Adapter │────▶│  LiteLLM    │
-│  (Port 3000)│     │ (Port 8001)  │     │ (Port 4000) │
-└─────────────┘     └──────────────┘     └─────────────┘
-       │                                         │
-       │                                         ▼
-       │                                  ┌─────────────┐
-       └─────────────────────────────────▶│   AI APIs   │
-                                          │ OpenAI, etc │
-                                          └─────────────┘
+┌─────────────────────────────────────────────────────────┐
+│                      Users / Workshops                  │
+└───────────────────────────┬─────────────────────────────┘
+                            │
+                    ┌───────▼────────┐
+                    │   OpenWebUI    │  Chat interface (port 3001)
+                    │  Microsoft SSO │
+                    └───────┬────────┘
+                            │
+                    ┌───────▼────────┐
+                    │    LiteLLM     │  Model gateway (port 4000)
+                    │   + Langfuse   │  Observability & cost tracking
+                    └───────┬────────┘
+                            │
+          ┌─────────────────┼──────────────────┐
+          │                 │                  │
+    ┌─────▼──────┐  ┌───────▼──────┐  ┌───────▼──────┐
+    │   OpenAI   │  │  Anthropic   │  │  Azure/Mistral│
+    │  GPT / DALL│  │    Claude    │  │  + Ollama     │
+    └────────────┘  └──────────────┘  └──────────────┘
+
+    ┌────────────┐  ┌──────────────┐  ┌──────────────┐
+    │    n8n     │  │     mcpo     │  │  user-sync   │
+    │ Automation │  │  MCP servers │  │ OWUI↔LiteLLM │
+    └────────────┘  └──────────────┘  └──────────────┘
 ```
 
-## Prerequisites
+## Services
 
-- Docker and Docker Compose
-- API keys for your desired AI providers (OpenAI, Anthropic, Google, etc.)
-- At least 4GB RAM available for containers
-- Port availability: 80, 443, 3000, 4000, 5432, 5678, 8001
+| Service | Description | Port |
+|---|---|---|
+| `open-webui` | Chat interface with Microsoft SSO | 3001 |
+| `litellm` | Unified LLM gateway (100+ providers) | 4000 |
+| `langfuse` | LLM observability & cost tracing | 3002 |
+| `n8n` | Workflow automation | 5679 |
+| `mcpo` | MCP server proxy for OpenWebUI tools | 8000 |
+| `user-sync` | Syncs users between OpenWebUI and LiteLLM | — |
+| `postgres` | Database backend (n8n + LiteLLM) | 5434 |
+| `ollama` | Local LLM hosting | — |
+
+## Supported Models
+
+**Text**
+- OpenAI: GPT-3.5, GPT-5.2, GPT-5.1 (Azure)
+- Anthropic: Claude Haiku 4.5, Opus 4.5, Sonnet 4.6 (with extended thinking)
+- Mistral Small (Azure)
+- Ollama: Llama 3.2 and any locally hosted model
+
+**Image generation**
+- DALL-E 2, DALL-E 3, GPT Image 1
+
+**Video generation**
+- Sora-2
+
+**Audio**
+- Whisper-1 (STT), TTS-1 (TTS)
 
 ## Quick Start
 
-### 1. Clone the Repository
+### 1. Clone
 
 ```bash
-git clone <your-repo-url>
-cd <your-repo-name>
+git clone https://github.com/Center-for-Hybrid-Intelligence/owui.git
+cd owui
 ```
 
-### 2. Configure Environment Variables
-
-Create a `.env` file in the project root:
+### 2. Configure environment
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` and add your API keys:
+Edit `.env` with your keys:
 
 ```env
-# Required
-OPENAI_API_KEY=sk-your-openai-key
-ANTHROPIC_API_KEY=sk-ant-your-anthropic-key
-LITELLM_MASTER_KEY=sk-your-generated-master-key
-LITELLM_SALT_KEY=your-generated-salt-key
-POSTGRES_PASSWORD=your-secure-postgres-password
-LITELLM_DB_PASSWORD=your-secure-db-password
-LITELLM_UI_PASSWORD=your-admin-password
+# AI Providers
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
+AZURE_OPENAI_API_KEY=...
+MISTRAL_API_KEY=...
+GEMINI_API_KEY=...
 
-# Optional
-GEMINI_API_KEY=your-gemini-key
-MISTRAL_API_KEY=your-mistral-key
-AZURE_OPENAI_API_KEY=your-azure-key
-LITELLM_UI_USERNAME=admin
+# LiteLLM
+LITELLM_MASTER_KEY=sk-...
+LITELLM_SALT_KEY=...
+LITELLM_DB_PASSWORD=...
+LITELLM_UI_PASSWORD=...
+
+# OpenWebUI
+WEBUI_URL=http://localhost:3001
+WEBUI_SECRET_KEY=...
+
+# Microsoft SSO (Azure AD)
+MICROSOFT_CLIENT_ID=...
+MICROSOFT_CLIENT_SECRET=...
+MICROSOFT_CLIENT_TENANT_ID=...
+MICROSOFT_REDIRECT_URI=...
+OPENID_PROVIDER_URL=...
+
+# PostgreSQL
+POSTGRES_PASSWORD=...
+
+# Langfuse (set after first launch — see Langfuse Setup below)
+LANGFUSE_PUBLIC_KEY=pk-lf-...
+LANGFUSE_SECRET_KEY=sk-lf-...
+
+# user-sync
+OPENWEBUI_API_KEY=...
+DEFAULT_USER_BUDGET=100
+DEFAULT_USER_ROLE=internal_user
 ```
 
-### 3. Build Custom OpenWebUI Image
+### 3. Create the external Docker network
 
 ```bash
-docker build -t owui-sora:latest .
+docker network create ollama_network
 ```
 
-### 4. Start Services
+### 4. Create the Langfuse database
 
 ```bash
-docker-compose up -d
+docker compose up -d postgres
+docker exec -it postgres psql -U n8n -c "CREATE DATABASE langfuse;"
 ```
 
-### 5. Access the Platform
-
-- **OpenWebUI**: http://localhost:3000
-- **LiteLLM Dashboard**: http://localhost:4000/ui
-- **n8n Automation**: http://localhost:5678
-
-## Using Sora-2 Video Generation
-
-### Setup in OpenWebUI
-
-1. Navigate to **Settings** → **Connections**
-2. Add a new OpenAI API connection:
-   - **Name**: Sora-2 (LiteLLM)
-   - **Base URL**: `http://localhost:8001/v1`
-   - **API Key**: Any value (not validated)
-3. Select the `sora-2` model
-
-### Generate Videos
-
-Simply send a prompt in OpenWebUI:
-```
-a dog running in a park at sunset
-```
-
-The adapter will return:
-- Video ID
-- Generation status
-- Download instructions
-- Cost tracking link
-
-### Download Generated Videos
-
-Once the video is ready:
+### 5. Start all services
 
 ```bash
-python download_video.py video_<ID>
+docker compose up -d
 ```
 
-Example:
-```bash
-python download_video.py video_690e148dbfb08190930a1e369ce6fc18
-```
+### 6. Langfuse setup
 
-### Video Parameters
+1. Go to `http://localhost:3002`
+2. Create an admin account
+3. Create a project named `ai-box`
+4. Go to **Settings → API Keys** → generate a key pair
+5. Add the keys to your `.env` (`LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`)
+6. Restart LiteLLM: `docker compose restart litellm`
 
-- **Durations**: 4s, 8s, or 12s
-- **Sizes**:
-  - `720x1280` (portrait, default)
-  - `1280x720` (landscape)
+## Accessing the Platform
 
-Modify defaults in `litellm-config.yaml`:
-```yaml
-- model_name: sora-2
-  litellm_params:
-    model: openai/sora-2
-    api_key: os.environ/OPENAI_API_KEY
-    seconds: "4"
-    size: "720x1280"
-```
+| Interface | URL |
+|---|---|
+| OpenWebUI | http://localhost:3001 |
+| LiteLLM Dashboard | http://localhost:4000/ui |
+| Langfuse | http://localhost:3002 |
+| n8n | http://localhost:5679 |
 
-## Cost Tracking
+## Key Configuration Files
 
-LiteLLM provides comprehensive cost tracking for all API calls:
+- `docker-compose.yml` — service definitions
+- `litellm-config.yaml` — model list, routing, callbacks
+- `mcpo/` — MCP server proxy config
+- `user-sync/` — user sync service between OpenWebUI and LiteLLM
 
-1. Open the dashboard: http://localhost:4000/ui
-2. View:
-   - Per-request costs
-   - Usage graphs
-   - Model statistics
-   - Detailed logs
+## Observability
 
-### Sora-2 Pricing
-- Standard: $0.10 per second
-  - 4s = $0.40
-  - 8s = $0.80
-  - 12s = $1.20
-- Pro: $0.30 per second (higher quality)
-
-## Service Details
-
-### OpenWebUI
-Custom-built image with:
-- OpenAI SDK upgraded to support Sora
-- UTF-8 encoding fixes
-- Middleware bug fixes
-
-### LiteLLM Proxy
-Centralized gateway providing:
-- Cost tracking and budgets
-- Rate limiting
-- Load balancing
-- Unified API interface
-- Database-backed logging
-
-### Sora Adapter
-Flask-based proxy that:
-- Converts chat completions to video requests
-- Maintains LiteLLM tracking
-- Returns OpenWebUI-compatible responses
-
-### n8n
-Workflow automation with:
-- PostgreSQL database backend
-- YouTube transcript integration (via MCP)
-- Custom node support
-
-## Configuration Files
-
-### `docker-compose.yml`
-Main service orchestration file defining all containers and their relationships.
-
-### `litellm-config.yaml`
-LiteLLM proxy configuration:
-- Model definitions
-- API key mappings
-- Default parameters
-- MCP server connections
-
-### `nginx.conf`
-Reverse proxy configuration:
-- Security headers
-- Exploit blocking
-- Routing rules
-
-### `Dockerfile`
-Custom OpenWebUI image build instructions.
-
-## Security Features
-
-- Environment-based secrets management
-- No hardcoded credentials
-- SSL/TLS support via Certbot
-- Security headers (X-Frame-Options, CSP, etc.)
-- Exploit pattern blocking
-- Cloudflare Tunnel for secure external access
-
-## Networking
-
-All services communicate on the `ollama_network` Docker bridge network:
-- Internal service discovery
-- Isolated from host network
-- Controlled port exposure
-
-## Data Persistence
-
-Volumes for persistent data:
-- `ollama_data`: Ollama models
-- `open_webui_data`: OpenWebUI user data
-- `n8n_data`: n8n workflows and credentials
-- `postgres_data`: Database storage
+Langfuse traces every LLM call through LiteLLM. Each trace includes:
+- Exact prompt and response
+- Token counts (input / output)
+- Estimated cost per call
+- Latency
+- User identity (passed from OpenWebUI via `X-OpenWebUI-User-Email` header)
 
 ## Troubleshooting
 
-### Adapter Won't Start
-```bash
-# Check if port 8001 is available
-netstat -ano | findstr :8001
-
-# Restart the adapter
-python sora_litellm_adapter.py
+**LiteLLM loads a stale API key**
+Your PowerShell session may have an env var overriding the `.env`. Fix:
+```powershell
+Remove-Item Env:OPENAI_API_KEY  # or whichever key
+docker compose down
+docker compose up -d --force-recreate
 ```
 
-### LiteLLM Not Responding
+**Langfuse not receiving traces**
+Check that `LANGFUSE_PUBLIC_KEY`, `LANGFUSE_SECRET_KEY`, and `LANGFUSE_HOST=http://langfuse:3000` are set in the `litellm` service env, and that `success_callback: ["langfuse"]` is in `litellm-config.yaml`.
+
+**Database connection issues**
 ```bash
-# Check Docker status
-docker ps | grep litellm
-
-# View logs
-docker logs litellm
-
-# Restart service
-docker restart litellm
-```
-
-### Database Connection Issues
-```bash
-# Check PostgreSQL status
 docker logs postgres
-
-# Verify connection
 docker exec -it postgres psql -U n8n -d n8n
 ```
 
-### Video Download Fails
-- Ensure `OPENAI_API_KEY` is set in environment
-- Check video status is "completed"
-- Verify video ID format
-
-## Development
-
-### Running Locally (Without Docker)
-
-1. Install dependencies:
-```bash
-pip install flask flask-cors requests openai
-```
-
-2. Set environment variables:
-```bash
-export OPENAI_API_KEY=your-key
-export LITELLM_MASTER_KEY=your-key
-```
-
-3. Start the adapter:
-```bash
-python sora_litellm_adapter.py
-```
-
-### Modifying the Adapter
-
-The Sora adapter (`sora_litellm_adapter.py`) intercepts chat completion requests and converts them to video generation requests. Key functions:
-- `/v1/chat/completions`: Main endpoint for OpenWebUI integration
-- `/v1/models`: Lists available models
-- `/health`: Health check endpoint
-- `/<path:path>`: Transparent proxy for other requests
-
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
+1. Clone the repo
+2. Create a feature branch: `git checkout -b feat/my-feature`
 3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+4. Open a pull request on `main`
 
-## License
+Never commit `.env` — it is gitignored.
 
-This project integrates several open-source components, each with their own licenses:
-- OpenWebUI: MIT License
-- LiteLLM: MIT License
-- Ollama: MIT License
-- n8n: Sustainable Use License
+## Built With
 
-## Support
-
-For issues and questions:
-- OpenWebUI: https://github.com/open-webui/open-webui
-- LiteLLM: https://docs.litellm.ai
-- n8n: https://docs.n8n.io
-
-## Acknowledgments
-
-Built with:
 - [OpenWebUI](https://github.com/open-webui/open-webui)
 - [LiteLLM](https://github.com/BerriAI/litellm)
-- [Ollama](https://ollama.ai)
+- [Langfuse](https://langfuse.com)
 - [n8n](https://n8n.io)
-- [Nginx](https://nginx.org)
+- [Ollama](https://ollama.ai)
 - [PostgreSQL](https://postgresql.org)
