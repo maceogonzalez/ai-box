@@ -179,6 +179,8 @@ services:
       - SYNC_INTERVAL=${USER_SYNC_INTERVAL:-60}
       - DEFAULT_USER_BUDGET=${DEFAULT_USER_BUDGET:-100}
       - DEFAULT_USER_ROLE=${DEFAULT_USER_ROLE:-internal_user}
+    volumes:
+      - open_webui_data:/openwebui-data:ro 
     networks:
       - ollama_network
     depends_on:

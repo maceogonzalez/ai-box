@@ -5,9 +5,9 @@ model_list:
       model: openai/gpt-3.5-turbo
       api_key: os.environ/OPENAI_API_KEY
 
-  - model_name: gpt-5.2
+  - model_name: gpt-5.4
     litellm_params:
-      model: openai/gpt-5.2-2025-12-11
+      model: openai/gpt-5.4-2026-03-05
       api_key: os.environ/OPENAI_API_KEY
   
   - model_name: whisper-1
@@ -106,6 +106,7 @@ litellm_settings:
 general_settings:
   master_key: os.environ/LITELLM_MASTER_KEY
   database_url: os.environ/DATABASE_URL
+  store_model_in_db: false
   user_header_mappings:
     - header_name: X-OpenWebUI-User-Name
       litellm_user_role: internal_user
