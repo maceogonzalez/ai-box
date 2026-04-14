@@ -57,14 +57,6 @@ model_list:
       api_key: os.environ/MISTRAL_API_KEY
       api_version: "2024-05-01-preview"
 
-# Video Generation Models
-  - model_name: sora-2
-    litellm_params:
-      model: openai/sora-2
-      api_key: os.environ/OPENAI_API_KEY
-      seconds: "4"  # Duration: must be "4", "8", or "12"
-      size: "720x1280"  # Default video dimensions (portrait)
-
 # Image Generation Models
   - model_name: dall-e-3
     litellm_params:

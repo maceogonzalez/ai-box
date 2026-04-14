@@ -56,9 +56,6 @@ Internal AI platform built for the [Center for Hybrid Intelligence (CHI)](https:
 **Image generation**
 - DALL-E 2, DALL-E 3, GPT Image 1
 
-**Video generation**
-- Sora-2
-
 **Audio**
 - Whisper-1 (STT), TTS-1 (TTS)
 
@@ -115,6 +112,10 @@ LANGFUSE_SECRET_KEY=sk-lf-...
 OPENWEBUI_API_KEY=...
 DEFAULT_USER_BUDGET=100
 DEFAULT_USER_ROLE=internal_user
+USER_SYNC_INTERVAL=60
+
+# LiteLLM UI
+LITELLM_UI_USERNAME=admin
 ```
 
 ### 3. Create the external Docker network
@@ -123,7 +124,11 @@ DEFAULT_USER_ROLE=internal_user
 docker network create ollama_network
 ```
 
+> **Note:** This network is declared as `external` in `docker-compose.yml` because it was originally used to connect this project to a separate Docker project (`yap`) running on the same machine via a shared bridge network.
+
 ### 4. Create the Langfuse database
+
+The `litellm` database and user are created automatically via `init-db.sh` on first boot. You only need to create the `langfuse` database manually:
 
 ```bash
 docker compose up -d postgres
@@ -158,6 +163,7 @@ docker compose up -d
 
 - `docker-compose.yml` — service definitions
 - `litellm-config.yaml` — model list, routing, callbacks
+- `init-db.sh` — auto-creates the `litellm` database and user on first postgres boot (reads `LITELLM_DB_PASSWORD` from env)
 - `mcpo/` — MCP server proxy config
 - `user-sync/` — user sync service between OpenWebUI and LiteLLM
 
@@ -173,9 +179,9 @@ Langfuse traces every LLM call through LiteLLM. Each trace includes:
 ## Troubleshooting
 
 **LiteLLM loads a stale API key**
-Your PowerShell session may have an env var overriding the `.env`. Fix:
-```powershell
-Remove-Item Env:OPENAI_API_KEY  # or whichever key
+Your shell session may have an env var overriding the `.env`. Fix:
+```bash
+unset OPENAI_API_KEY  # or whichever key
 docker compose down
 docker compose up -d --force-recreate
 ```
