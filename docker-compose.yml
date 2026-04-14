@@ -42,44 +42,6 @@ services:
     networks:
       - ollama_network
 
-  #  nginx:
-  #    image: nginx:alpine
-  #    container_name: nginx-proxy
-  #    ports:
-  #      - "80:80"
-  #      - "443:443"
-  #    volumes:
-  #      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-  #      - ./certbot/conf:/etc/letsencrypt:ro
-  #      - ./certbot/www:/var/www/certbot:ro
-  #    depends_on:
-  #      - open-webui
-  #      - ollama
-  #    restart: unless-stopped
-  #    networks:
-  #      - ollama_network
-
-
-
-  #  certbot:
-  #    image: certbot/certbot
-  #    container_name: certbot
-  #    volumes:
-  #      - ./certbot/conf:/etc/letsencrypt
-  #      - ./certbot/www:/var/www/certbot
-  #    networks:
-  #      - ollama_network
-
-  #  cloudflared:
-  #   image: cloudflare/cloudflared:latest
-  #    container_name: cloudflared
-  #    command: tunnel --url http://owui:8080
-  #    depends_on:
-  #      - open-webui
-  #    restart: unless-stopped
-  #    networks:
-  #      - caddy
-
   n8n:
     image: n8nio/n8n:latest
     container_name: n8n_2
@@ -116,12 +78,13 @@ services:
       - "5434:5434"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+      - ./init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
     environment:
       - POSTGRES_DB=n8n
       - POSTGRES_USER=n8n
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - PGPORT=5434
+      - LITELLM_DB_PASSWORD=${LITELLM_DB_PASSWORD}
     restart: unless-stopped
     networks:
       - ollama_network
