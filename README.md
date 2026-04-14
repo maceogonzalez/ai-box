@@ -64,7 +64,7 @@ Internal AI platform built for the [Center for Hybrid Intelligence (CHI)](https:
 ### 1. Clone
 
 ```bash
-git clone https://github.com/Center-for-Hybrid-Intelligence/owui.git
+git clone https://github.com/maceogonzalez/ai-box.git
 cd owui
 ```
 
