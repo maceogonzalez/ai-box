@@ -65,7 +65,6 @@ Internal AI platform built for the [Center for Hybrid Intelligence (CHI)](https:
 
 ```bash
 git clone https://github.com/maceogonzalez/ai-box.git
-cd owui
 ```
 
 ### 2. Configure environment
